@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Monitor</title>
+    <script src="../base1/cockpit.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1 class="title">Server Monitor</h1>
+            <p class="subtitle" id="server-info">Loading...</p>
+        </div>
+        <div class="header-right">
+            <span class="update-time" id="update-time"></span>
+            <a href="/netdata/" target="_top" class="btn">Netdata</a>
+            <a href="/" target="_top" class="btn">Uptime Kuma</a>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="tab-btn" data-tab="management">Management</button>
+    </div>
+
+    <!-- ═══ Dashboard Tab ═══ -->
+    <div id="tab-dashboard" class="tab-content active">
+        <div class="grid grid-4">
+            <div class="card">
+                <div class="card-label">CPU</div>
+                <div class="card-value" id="cpu-pct">--</div>
+                <div class="progress"><div class="progress-fill cyan" id="cpu-bar"></div></div>
+            </div>
+            <div class="card">
+                <div class="card-label">Memory</div>
+                <div class="card-value" id="mem-pct">--</div>
+                <div class="progress"><div class="progress-fill purple" id="mem-bar"></div></div>
+            </div>
+            <div class="card">
+                <div class="card-label">Disk /</div>
+                <div class="card-value" id="disk-pct">--</div>
+                <div class="progress"><div class="progress-fill green" id="disk-bar"></div></div>
+            </div>
+            <div class="card">
+                <div class="card-label">Uptime</div>
+                <div class="card-value" id="uptime-val">--</div>
+                <div class="card-sub" id="load-avg">--</div>
+            </div>
+        </div>
+        <div class="grid grid-3">
+            <div class="card">
+                <h2 class="section-title"><span class="dot cyan"></span> CPU</h2>
+                <div class="detail-row">
+                    <div class="ring-wrap">
+                        <svg width="100" height="100" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="#27272a" stroke-width="8"/>
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="#22d3ee" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round" id="cpu-ring"/>
+                        </svg>
+                        <div class="ring-value cyan-text" id="cpu-ring-val">0%</div>
+                    </div>
+                    <div class="info-list">
+                        <div class="info-row"><span class="info-label">Cores</span><span id="cpu-cores">--</span></div>
+                        <div class="info-row"><span class="info-label">Model</span><span class="truncate" id="cpu-model">--</span></div>
+                        <div class="info-row"><span class="info-label">User</span><span id="cpu-user">--</span></div>
+                        <div class="info-row"><span class="info-label">System</span><span id="cpu-sys">--</span></div>
+                        <div class="info-row"><span class="info-label">I/O Wait</span><span id="cpu-iowait">--</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="section-title"><span class="dot purple"></span> Memory</h2>
+                <div class="detail-row">
+                    <div class="ring-wrap">
+                        <svg width="100" height="100" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="#27272a" stroke-width="8"/>
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="#a78bfa" stroke-width="8" stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round" id="mem-ring"/>
+                        </svg>
+                        <div class="ring-value purple-text" id="mem-ring-val">0%</div>
+                    </div>
+                    <div class="info-list">
+                        <div class="info-row"><span class="info-label">Total</span><span id="mem-total">--</span></div>
+                        <div class="info-row"><span class="info-label">Used</span><span id="mem-used">--</span></div>
+                        <div class="info-row"><span class="info-label">Free</span><span id="mem-free">--</span></div>
+                        <div class="info-row"><span class="info-label">Buffers/Cache</span><span id="mem-cache">--</span></div>
+                        <div class="info-row"><span class="info-label">Swap Used</span><span id="swap-used">--</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="section-title"><span class="dot green"></span> Disk</h2>
+                <div id="disk-list"></div>
+            </div>
+        </div>
+        <div class="card mb-1">
+            <h2 class="section-title"><span class="dot purple"></span> Memory Advisor</h2>
+            <div id="mem-advisor-banner" class="advisor-banner advisor-ok">
+                <span class="advisor-badge">--</span>
+                <span class="advisor-reason">진단 중...</span>
+            </div>
+            <div class="grid grid-2">
+                <div>
+                    <div class="advisor-sub-title">Key Metrics</div>
+                    <div class="info-list">
+                        <div class="info-row"><span class="info-label">Available (즉시 사용 가능)</span><span id="mem-available">--</span></div>
+                        <div class="info-row"><span class="info-label">Available %</span><span id="mem-available-pct">--</span></div>
+                        <div class="info-row"><span class="info-label">Swap 사용/전체</span><span id="mem-swap-detail">--</span></div>
+                        <div class="info-row"><span class="info-label">Swap Pressure</span><span id="mem-swap-pressure">--</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="advisor-sub-title">Memory by User</div>
+                    <div id="mem-by-user"><div class="muted">측정 중...</div></div>
+                </div>
+            </div>
+            <div class="advisor-sub-title">Top 10 Processes by RSS</div>
+            <div id="mem-top-procs"><div class="muted">측정 중...</div></div>
+        </div>
+        <div class="grid grid-2">
+            <div class="card">
+                <h2 class="section-title"><span class="dot orange"></span> Services</h2>
+                <div id="service-list"><div class="muted loading">Loading...</div></div>
+            </div>
+            <div class="card">
+                <h2 class="section-title"><span class="dot red"></span> Network</h2>
+                <div id="net-list"><div class="muted loading">Loading...</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Management Tab ═══ -->
+    <div id="tab-management" class="tab-content">
+
+        <!-- Pending Actions Banner -->
+        <div id="pending-actions-banner" style="display:none;margin-bottom:1rem"></div>
+
+        <!-- Sub-tab Navigation -->
+        <div class="subtab-nav">
+            <button class="subtab-btn active" data-subtab="vhost">VHost</button>
+            <button class="subtab-btn" data-subtab="accounts">Accounts</button>
+            <button class="subtab-btn" data-subtab="pm2">PM2</button>
+            <button class="subtab-btn" data-subtab="database">Database</button>
+            <button class="subtab-btn" data-subtab="ssl">SSL</button>
+            <button class="subtab-btn" data-subtab="firewall">Firewall</button>
+            <button class="subtab-btn" data-subtab="services">Services</button>
+            <button class="subtab-btn" data-subtab="logs">Logs</button>
+            <button class="subtab-btn" data-subtab="system">System</button>
+            <button class="subtab-btn" data-subtab="ip-rules">IP Rules</button>
+            <button class="subtab-btn" data-subtab="reboot">Reboot</button>
+        </div>
+
+        <!-- ── VHost Sub-tab ── -->
+        <div id="subtab-vhost" class="subtab-content active">
+            <div class="card">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title">Registered VHosts</span>
+                    <button class="btn btn-sm" id="vhost-refresh">Refresh</button>
+                </div>
+                <div id="vhost-list"><div class="muted">Loading...</div></div>
+            </div>
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">Add Reverse Proxy VHost</div>
+                <form id="vhost-form" class="mgmt-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Domain</label>
+                            <input type="text" id="vhost-domain" class="form-input" placeholder="api.example.com" autocomplete="off">
+                            <span class="form-error" id="vhost-domain-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Backend Port</label>
+                            <input type="number" id="vhost-port" class="form-input" placeholder="4000" min="1024" max="65535">
+                            <span class="form-error" id="vhost-port-error"></span>
+                        </div>
+                        <div class="form-group form-check-group">
+                            <label class="form-check-label"><input type="checkbox" id="vhost-ssl" checked><span>Issue SSL (certbot)</span></label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="vhost-submit">Create VHost</button>
+                </form>
+                <div id="vhost-result"></div>
+            </div>
+        </div>
+
+        <!-- ── Accounts Sub-tab (Account + SSH) ── -->
+        <div id="subtab-accounts" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title">System Accounts</span>
+                    <button class="btn btn-sm" id="account-refresh">Refresh</button>
+                </div>
+                <div id="account-list"><div class="muted">Loading...</div></div>
+            </div>
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">Create Account</div>
+                <form id="account-form" class="mgmt-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Username</label>
+                            <input type="text" id="account-username" class="form-input" placeholder="newuser" autocomplete="off">
+                            <span class="form-error" id="account-username-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="account-password" class="form-input" placeholder="min 8 characters" autocomplete="new-password">
+                            <span class="form-error" id="account-password-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" id="account-confirm" class="form-input" placeholder="confirm" autocomplete="new-password">
+                            <span class="form-error" id="account-confirm-error"></span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="account-submit">Create Account</button>
+                </form>
+                <div id="account-result"></div>
+            </div>
+            <h2 class="section-title mt-2"><span class="dot green"></span> SSH Key Management</h2>
+            <div class="card">
+                <div class="mgmt-header">
+                    <div class="form-group form-inline">
+                        <label class="form-label">Account</label>
+                        <select id="ssh-account-select" class="form-select"></select>
+                        <span class="form-error" id="ssh-account-error"></span>
+                    </div>
+                    <button class="btn btn-sm" id="ssh-refresh">Refresh</button>
+                </div>
+                <div id="ssh-key-list"><div class="muted">Select an account to view SSH keys</div></div>
+            </div>
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">Register Public Key</div>
+                <form id="ssh-form" class="mgmt-form">
+                    <div class="form-group">
+                        <label class="form-label">SSH Public Key</label>
+                        <textarea id="ssh-key-input" class="form-textarea" rows="3" placeholder="ssh-ed25519 AAAA... user@host"></textarea>
+                        <span class="form-error" id="ssh-key-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="ssh-submit">Register Key</button>
+                </form>
+                <div id="ssh-result"></div>
+            </div>
+        </div>
+
+        <!-- ── PM2 Sub-tab ── -->
+        <div id="subtab-pm2" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <div class="form-group form-inline">
+                        <label class="form-label">Account</label>
+                        <select id="pm2-account-select" class="form-select"></select>
+                    </div>
+                    <div class="mgmt-header-actions">
+                        <span id="pm2-startup-status"></span>
+                        <button class="btn btn-sm btn-accent hidden" id="pm2-startup-btn">Register Startup</button>
+                        <button class="btn btn-sm" id="pm2-refresh">Refresh</button>
+                    </div>
+                </div>
+                <div id="pm2-list"><div class="muted">Select an account to view PM2 processes</div></div>
+                <div id="pm2-result"></div>
+            </div>
+            <div class="card mt-1" id="pm2-logs-panel" style="display:none">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title" id="pm2-logs-title">Logs</span>
+                    <button class="btn btn-sm" id="pm2-logs-close">Close</button>
+                </div>
+                <div id="pm2-logs-content"></div>
+            </div>
+        </div>
+
+        <!-- ── Database Sub-tab ── -->
+        <div id="subtab-database" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title">Databases</span>
+                    <button class="btn btn-sm" id="db-refresh">Refresh</button>
+                </div>
+                <div id="db-list"><div class="muted">Loading...</div></div>
+            </div>
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">Create Database</div>
+                <form id="db-create-form" class="mgmt-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Database Name</label>
+                            <input type="text" id="db-create-name" class="form-input" placeholder="my_database" autocomplete="off">
+                            <span class="form-error" id="db-create-name-error"></span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="db-create-submit">Create Database</button>
+                </form>
+                <div id="db-create-result"></div>
+            </div>
+
+            <h2 class="section-title mt-2"><span class="dot purple"></span> Database Users</h2>
+            <div class="card">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title">Users</span>
+                    <button class="btn btn-sm" id="db-user-refresh">Refresh</button>
+                </div>
+                <div id="db-user-list"><div class="muted">Loading...</div></div>
+            </div>
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">Create User</div>
+                <form id="db-user-form" class="mgmt-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Username</label>
+                            <input type="text" id="db-user-name" class="form-input" placeholder="app_user" autocomplete="off">
+                            <span class="form-error" id="db-user-name-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Host</label>
+                            <input type="text" id="db-user-host" class="form-input" placeholder="localhost" value="localhost" autocomplete="off">
+                            <span class="form-error" id="db-user-host-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="db-user-pass" class="form-input" placeholder="min 8 characters" autocomplete="new-password">
+                            <span class="form-error" id="db-user-pass-error"></span>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Target Database</label>
+                            <select id="db-user-target" class="form-select">
+                                <option value="">-- Select Database --</option>
+                            </select>
+                            <span class="form-error" id="db-user-target-error"></span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="db-user-submit">Create User</button>
+                </form>
+                <div id="db-user-result"></div>
+            </div>
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">Grant Database Access (Existing User)</div>
+                <p class="muted" style="font-size:0.75rem;margin-bottom:0.5rem">
+                    이미 존재하는 DB 사용자에게 다른 DB의 ALL PRIVILEGES를 부여한다. 신규 사용자는 위의 Create User 폼을 사용.
+                </p>
+                <form id="db-grant-form" class="mgmt-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Existing User</label>
+                            <select id="db-grant-user" class="form-select">
+                                <option value="">-- Select User --</option>
+                            </select>
+                            <span class="form-error" id="db-grant-user-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Target Database</label>
+                            <select id="db-grant-target" class="form-select">
+                                <option value="">-- Select Database --</option>
+                            </select>
+                            <span class="form-error" id="db-grant-target-error"></span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="db-grant-submit">Grant Access</button>
+                </form>
+                <div id="db-grant-result"></div>
+            </div>
+
+            <div class="card mt-1" id="db-grants-panel" style="display:none">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title" id="db-grants-title">Grants</span>
+                    <button class="btn btn-sm" id="db-grants-close">Close</button>
+                </div>
+                <div id="db-grants-content"></div>
+            </div>
+
+            <h2 class="section-title mt-2"><span class="dot cyan"></span> Read-Only Query</h2>
+            <div class="card">
+                <form id="db-query-form" class="mgmt-form">
+                    <div class="form-group">
+                        <label class="form-label">SQL (SELECT / SHOW / DESCRIBE / EXPLAIN only)</label>
+                        <textarea id="db-query-input" class="form-textarea" rows="3" placeholder="SELECT * FROM mysql.user LIMIT 10"></textarea>
+                        <span class="form-error" id="db-query-input-error"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="db-query-submit">Execute</button>
+                </form>
+                <div id="db-query-result"></div>
+            </div>
+        </div>
+
+        <!-- ── SSL Sub-tab ── -->
+        <div id="subtab-ssl" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title">SSL Certificates</span>
+                    <div class="mgmt-header-actions">
+                        <span id="ssl-timer-status"></span>
+                        <button class="btn btn-sm" id="ssl-dryrun-btn">Dry Run</button>
+                        <button class="btn btn-sm" id="ssl-refresh">Refresh</button>
+                    </div>
+                </div>
+                <div id="ssl-cert-list"><div class="muted">Loading...</div></div>
+            </div>
+            <div id="ssl-action-result"></div>
+
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">Issue New Certificate</div>
+                <form id="ssl-issue-form" class="mgmt-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Primary Domain</label>
+                            <input type="text" id="ssl-domain" class="form-input" placeholder="api.example.com" autocomplete="off">
+                            <span class="form-error" id="ssl-domain-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Additional Domains (comma-separated, optional)</label>
+                            <input type="text" id="ssl-extra-domains" class="form-input" placeholder="www.example.com, cdn.example.com" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Method</label>
+                            <select id="ssl-method" class="form-select">
+                                <option value="apache">Apache (--apache) — VHost 자동 설정 + 리로드</option>
+                                <option value="standalone">Standalone (--standalone) — Port 80 일시 사용</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="ssl-email" class="form-input" placeholder="admin@example.com" value="admin@example.com" autocomplete="off">
+                        </div>
+                    </div>
+                    <div id="ssl-dep-preview"></div>
+                    <button type="submit" class="btn btn-primary" id="ssl-issue-submit">Issue Certificate</button>
+                </form>
+                <div id="ssl-issue-chain"></div>
+            </div>
+        </div>
+
+        <!-- ── Firewall Sub-tab ── -->
+        <div id="subtab-firewall" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <div><span class="mgmt-sub-title">Open Ports</span> <span class="muted" style="font-size:0.7rem">Zone: <span id="fw-zone-info">--</span></span></div>
+                    <button class="btn btn-sm" id="fw-refresh">Refresh</button>
+                </div>
+                <div id="fw-port-list"><div class="muted">Loading...</div></div>
+            </div>
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">Add Port</div>
+                <form id="fw-port-form" class="mgmt-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Port</label>
+                            <input type="number" id="fw-port-input" class="form-input" placeholder="8080" min="1" max="65535">
+                            <span class="form-error" id="fw-port-input-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Protocol</label>
+                            <select id="fw-proto-select" class="form-select">
+                                <option value="tcp">TCP</option>
+                                <option value="udp">UDP</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="fw-port-submit">Add Port</button>
+                </form>
+            </div>
+            <h2 class="section-title mt-2"><span class="dot red"></span> Allowed Services</h2>
+            <div class="card">
+                <div id="fw-service-list"><div class="muted">Loading...</div></div>
+            </div>
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">Add Service</div>
+                <form id="fw-svc-form" class="mgmt-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Service Name</label>
+                            <input type="text" id="fw-svc-input" class="form-input" placeholder="http" autocomplete="off">
+                            <span class="form-error" id="fw-svc-input-error"></span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="fw-svc-submit">Add Service</button>
+                </form>
+            </div>
+            <div id="fw-result"></div>
+        </div>
+
+        <!-- ── Services Sub-tab ── -->
+        <div id="subtab-services" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title">Managed Services</span>
+                    <button class="btn btn-sm" id="svc-refresh">Refresh</button>
+                </div>
+                <div id="svc-mgmt-list"><div class="muted">Loading...</div></div>
+            </div>
+            <div id="svc-result"></div>
+            <div class="card mt-1" id="svc-journal-panel" style="display:none">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title" id="svc-journal-title">Journal</span>
+                    <button class="btn btn-sm" id="svc-journal-close">Close</button>
+                </div>
+                <div id="svc-journal-content"></div>
+            </div>
+        </div>
+
+        <!-- ── Logs Sub-tab ── -->
+        <div id="subtab-logs" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <div class="form-group form-inline">
+                        <label class="form-label">Source</label>
+                        <select id="log-source" class="form-select"></select>
+                    </div>
+                    <div class="form-group form-inline">
+                        <label class="form-label">Lines</label>
+                        <select id="log-lines" class="form-select" style="min-width:80px">
+                            <option value="50">50</option>
+                            <option value="100" selected>100</option>
+                            <option value="200">200</option>
+                            <option value="500">500</option>
+                        </select>
+                    </div>
+                    <div class="form-group form-inline">
+                        <label class="form-check-label"><input type="checkbox" id="log-auto-refresh"><span id="log-auto-label">Auto</span></label>
+                    </div>
+                    <button class="btn btn-sm" id="log-refresh">Refresh</button>
+                </div>
+                <div id="log-output" class="log-scroll-container"><div class="muted">Select a source</div></div>
+            </div>
+        </div>
+
+        <!-- ── System Sub-tab ── -->
+        <div id="subtab-system" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title">System Overview</span>
+                    <button class="btn btn-sm" id="sys-refresh">Refresh</button>
+                </div>
+            </div>
+            <h2 class="section-title mt-1"><span class="dot orange"></span> Cron Jobs</h2>
+            <div class="card">
+                <div id="sys-cron-list"><div class="muted">Loading...</div></div>
+            </div>
+            <h2 class="section-title mt-2"><span class="dot green"></span> Disk Usage</h2>
+            <div class="card">
+                <div id="sys-disk-list"><div class="muted">Loading...</div></div>
+            </div>
+            <h2 class="section-title mt-2"><span class="dot red"></span> Large Files (&gt;100MB)</h2>
+            <div class="card">
+                <div id="sys-large-files"><div class="muted">Loading...</div></div>
+            </div>
+            <h2 class="section-title mt-2"><span class="dot cyan"></span> System Updates</h2>
+            <div class="card">
+                <div id="sys-updates"><div class="muted">Loading...</div></div>
+            </div>
+            <h2 class="section-title mt-2"><span class="dot purple"></span> Security Audit</h2>
+            <div class="card">
+                <div id="sys-security"><div class="muted">Loading...</div></div>
+            </div>
+        </div>
+
+        <!-- ── IP Rules Sub-tab ── -->
+        <div id="subtab-ip-rules" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title">VHost별 IP 접근 제어</span>
+                    <button class="btn btn-sm" id="ip-rules-refresh">Refresh</button>
+                </div>
+                <p class="muted" style="font-size:0.75rem;margin-bottom:0.5rem">
+                    도메인별 Apache vhost의 IP 화이트리스트 관리. <code>/etc/httpd/conf.d/iprules.d/&lt;domain&gt;.conf</code>
+                    파일을 생성·갱신하고 httpd reload. monitor.example.com 같은 보호 대상은 자기 잠금 방어를 위해
+                    read-only(SSH로만 변경).
+                </p>
+                <div id="ip-rules-list"><div class="muted">Loading...</div></div>
+            </div>
+            <div class="card mt-1" id="ip-rule-edit-panel" style="display:none">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title" id="ip-rule-edit-title">Edit</span>
+                    <button class="btn btn-sm" id="ip-rule-edit-close">Close</button>
+                </div>
+                <div id="ip-rule-edit-content"></div>
+            </div>
+        </div>
+
+        <!-- ── Reboot Sub-tab ── -->
+        <div id="subtab-reboot" class="subtab-content">
+            <div class="card">
+                <div class="mgmt-header">
+                    <span class="mgmt-sub-title">예약된 재시작 상태</span>
+                    <button class="btn btn-sm" id="reboot-refresh">Refresh</button>
+                </div>
+                <div id="reboot-status"><div class="muted">상태 확인 중...</div></div>
+                <div class="mt-1">
+                    <button class="btn btn-danger" id="reboot-cancel-btn" style="display:none">Cancel Scheduled Reboot</button>
+                </div>
+            </div>
+            <div class="card mt-1">
+                <div class="mgmt-sub-title">재시작 예약</div>
+                <p class="muted" style="font-size:0.75rem;margin-bottom:0.5rem">
+                    소프트웨어 업데이트(특히 커널 보안 패치) 후 비사용시간 재부팅용. PM2 startup
+                    + systemd unit + Docker restart=unless-stopped로 등록된 서비스는 부팅 후 자동
+                    복구됩니다. 예약 후 재부팅 직전 wall 메시지가 모든 SSH 세션에 broadcast 됩니다.
+                    범위: 1분 이상, 7일 이내.
+                </p>
+                <form id="reboot-form" class="mgmt-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">재시작 시각 (서버 로컬 시간 기준)</label>
+                            <input type="datetime-local" id="reboot-when" class="form-input">
+                            <span class="form-error" id="reboot-when-error"></span>
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label class="form-label">사유 (선택, 80자)</label>
+                            <input type="text" id="reboot-reason" class="form-input" placeholder="kernel security update" autocomplete="off" maxlength="80">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="reboot-submit">Schedule Reboot</button>
+                </form>
+                <div id="reboot-result"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+    <script src="utils.js"></script>
+    <script src="management.js"></script>
+    <script src="database.js"></script>
+    <script src="ssl.js"></script>
+    <script src="firewall.js"></script>
+    <script src="services.js"></script>
+    <script src="logs.js"></script>
+    <script src="system.js"></script>
+    <script src="iprules.js"></script>
+    <script src="reboot.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Apache mod_status (internal port, local only)
+Listen 127.0.0.1:{{SERVER_STATUS_PORT}}
+
+<VirtualHost 127.0.0.1:{{SERVER_STATUS_PORT}}>
+    <Location "/server-status">
+        SetHandler server-status
+        Require local
+    </Location>
+</VirtualHost>
+
+ExtendedStatus On

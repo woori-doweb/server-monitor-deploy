@@ -1,0 +1,15 @@
+-- server-monitor: MariaDB 모니터링 계정 생성 템플릿
+-- install.sh에서 {{변수}}를 자동 치환합니다.
+
+CREATE USER IF NOT EXISTS '{{DB_MONITOR_USER}}'@'localhost'
+  IDENTIFIED BY '{{DB_MONITOR_PASS}}';
+
+GRANT USAGE ON *.* TO '{{DB_MONITOR_USER}}'@'localhost';
+GRANT REPLICATION CLIENT ON *.* TO '{{DB_MONITOR_USER}}'@'localhost';
+GRANT PROCESS ON *.* TO '{{DB_MONITOR_USER}}'@'localhost';
+
+{{DB_GRANTS}}
+
+GRANT SELECT ON `performance_schema`.* TO '{{DB_MONITOR_USER}}'@'localhost';
+
+FLUSH PRIVILEGES;

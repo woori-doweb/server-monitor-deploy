@@ -1,0 +1,9 @@
+# Custom Process Groups (append to /etc/netdata/apps_groups.conf)
+# Modify process patterns for your services
+
+app1-backend: *app1*backend*
+pbj-app: *app3*
+uptime-kuma: *uptime-kuma*
+pm2: PM2* pm2*
+nodejs: node
+mariadb: mysqld mariadbd

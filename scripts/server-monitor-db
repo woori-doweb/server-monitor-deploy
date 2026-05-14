@@ -1,0 +1,172 @@
+#!/bin/bash
+# /usr/local/bin/server-monitor-db
+# Server Monitor - MariaDB management wrapper
+# Permissions: 755, root:root
+# Reads DB credentials from /etc/server-monitor/db.conf
+
+set -euo pipefail
+
+CONF=/etc/server-monitor/db.conf
+if [[ ! -f "$CONF" ]]; then
+    echo "ERROR: db.conf not found" >&2
+    exit 1
+fi
+
+MYSQL="mysql --defaults-extra-file=$CONF -N -B"
+
+ACTION="${1:-}"
+shift || true
+
+case "$ACTION" in
+    list-databases)
+        $MYSQL -e "SHOW DATABASES"
+        ;;
+
+    create-database)
+        DBNAME="${1:-}"
+        if [[ ! "$DBNAME" =~ ^[a-zA-Z0-9_]{1,64}$ ]]; then
+            echo "ERROR: Invalid database name" >&2
+            exit 1
+        fi
+        $MYSQL -e "CREATE DATABASE ${DBNAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        echo "OK: Database $DBNAME created"
+        ;;
+
+    list-users)
+        $MYSQL -e "SELECT user, host FROM mysql.user ORDER BY user, host"
+        ;;
+
+    show-grants)
+        USER="${1:-}"
+        HOST="${2:-localhost}"
+        if [[ ! "$USER" =~ ^[a-zA-Z0-9_]{1,80}$ ]]; then
+            echo "ERROR: Invalid username" >&2
+            exit 1
+        fi
+        $MYSQL -e "SHOW GRANTS FOR '${USER}'@'${HOST}'"
+        ;;
+
+    create-user)
+        USER="${1:-}"
+        HOST="${2:-localhost}"
+        PASS="${3:-}"
+        DBNAME="${4:-}"
+        if [[ ! "$USER" =~ ^[a-zA-Z0-9_]{1,80}$ ]]; then
+            echo "ERROR: Invalid username" >&2
+            exit 1
+        fi
+        if [[ ! "$DBNAME" =~ ^[a-zA-Z0-9_]{1,64}$ ]]; then
+            echo "ERROR: Invalid database name" >&2
+            exit 1
+        fi
+        if [[ "$DBNAME" == "*" ]]; then
+            echo "ERROR: Wildcard database grants not allowed" >&2
+            exit 1
+        fi
+        $MYSQL -e "CREATE USER '${USER}'@'${HOST}' IDENTIFIED BY '${PASS}'"
+        $MYSQL -e "GRANT ALL PRIVILEGES ON ${DBNAME}.* TO '${USER}'@'${HOST}'"
+        $MYSQL -e "FLUSH PRIVILEGES"
+        echo "OK: User ${USER}@${HOST} created with ALL on ${DBNAME}"
+        ;;
+
+    drop-user)
+        USER="${1:-}"
+        HOST="${2:-localhost}"
+        if [[ ! "$USER" =~ ^[a-zA-Z0-9_]{1,80}$ ]]; then
+            echo "ERROR: Invalid username" >&2
+            exit 1
+        fi
+        if [[ "$USER" == "root" || "$USER" == "mysql" || "$USER" == "mariadb.sys" ]]; then
+            echo "ERROR: Cannot drop system user" >&2
+            exit 1
+        fi
+        $MYSQL -e "DROP USER '${USER}'@'${HOST}'"
+        $MYSQL -e "FLUSH PRIVILEGES"
+        echo "OK: User ${USER}@${HOST} dropped"
+        ;;
+
+    grant-database)
+        USER="${1:-}"
+        HOST="${2:-localhost}"
+        DBNAME="${3:-}"
+        if [[ ! "$USER" =~ ^[a-zA-Z0-9_]{1,80}$ ]]; then
+            echo "ERROR: Invalid username" >&2
+            exit 1
+        fi
+        if [[ ! "$DBNAME" =~ ^[a-zA-Z0-9_]{1,64}$ ]]; then
+            echo "ERROR: Invalid database name" >&2
+            exit 1
+        fi
+        if [[ "$DBNAME" == "*" ]]; then
+            echo "ERROR: Wildcard database grants not allowed" >&2
+            exit 1
+        fi
+        if [[ "$USER" == "root" || "$USER" == "mysql" || "$USER" == "mariadb.sys" ]]; then
+            echo "ERROR: Cannot modify system user privileges" >&2
+            exit 1
+        fi
+        USER_EXISTS=$($MYSQL -e "SELECT 1 FROM mysql.user WHERE user='${USER}' AND host='${HOST}' LIMIT 1")
+        if [[ -z "$USER_EXISTS" ]]; then
+            echo "ERROR: User '${USER}'@'${HOST}' does not exist (use create-user instead)" >&2
+            exit 1
+        fi
+        DB_EXISTS=$($MYSQL -e "SELECT 1 FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='${DBNAME}' LIMIT 1")
+        if [[ -z "$DB_EXISTS" ]]; then
+            echo "ERROR: Database '${DBNAME}' does not exist" >&2
+            exit 1
+        fi
+        $MYSQL -e "GRANT ALL PRIVILEGES ON \`${DBNAME}\`.* TO '${USER}'@'${HOST}'"
+        $MYSQL -e "FLUSH PRIVILEGES"
+        echo "OK: Granted ALL on ${DBNAME} to ${USER}@${HOST}"
+        ;;
+
+    revoke-database)
+        USER="${1:-}"
+        HOST="${2:-localhost}"
+        DBNAME="${3:-}"
+        if [[ ! "$USER" =~ ^[a-zA-Z0-9_]{1,80}$ ]]; then
+            echo "ERROR: Invalid username" >&2
+            exit 1
+        fi
+        if [[ ! "$DBNAME" =~ ^[a-zA-Z0-9_]{1,64}$ ]]; then
+            echo "ERROR: Invalid database name" >&2
+            exit 1
+        fi
+        if [[ "$USER" == "root" || "$USER" == "mysql" || "$USER" == "mariadb.sys" ]]; then
+            echo "ERROR: Cannot modify system user privileges" >&2
+            exit 1
+        fi
+        HAS_GRANT=$($MYSQL -e "SELECT 1 FROM mysql.db WHERE user='${USER}' AND host='${HOST}' AND db='${DBNAME}' LIMIT 1")
+        if [[ -z "$HAS_GRANT" ]]; then
+            echo "ERROR: No DB-level grants for '${USER}'@'${HOST}' on '${DBNAME}'" >&2
+            exit 1
+        fi
+        $MYSQL -e "REVOKE ALL PRIVILEGES, GRANT OPTION ON \`${DBNAME}\`.* FROM '${USER}'@'${HOST}'"
+        $MYSQL -e "FLUSH PRIVILEGES"
+        echo "OK: Revoked ALL on ${DBNAME} from ${USER}@${HOST}"
+        ;;
+
+    query)
+        SQL="${1:-}"
+        UPPER_SQL=$(echo "$SQL" | tr '[:lower:]' '[:upper:]' | sed 's/^[[:space:]]*//')
+        if [[ ! "$UPPER_SQL" =~ ^(SELECT|SHOW|DESCRIBE|EXPLAIN)[[:space:]] ]]; then
+            echo "ERROR: Only SELECT/SHOW/DESCRIBE/EXPLAIN allowed" >&2
+            exit 1
+        fi
+        if echo "$UPPER_SQL" | grep -qiE '(INTO[[:space:]]+(OUTFILE|DUMPFILE)|LOAD_FILE|SLEEP[[:space:]]*\(|BENCHMARK[[:space:]]*\()'; then
+            echo "ERROR: Query contains forbidden pattern" >&2
+            exit 1
+        fi
+        if echo "$SQL" | grep -q ';'; then
+            echo "ERROR: Multiple statements not allowed" >&2
+            exit 1
+        fi
+        $MYSQL -e "$SQL"
+        ;;
+
+    *)
+        echo "ERROR: Unknown action: $ACTION" >&2
+        echo "Allowed: list-databases, create-database, list-users, show-grants, create-user, drop-user, grant-database, revoke-database, query" >&2
+        exit 1
+        ;;
+esac

@@ -1,0 +1,173 @@
+#!/bin/bash
+# /usr/local/bin/server-monitor-iprule (nginx 어댑터 환경 nginx 버전)
+# Server Monitor - nginx vhost IP rule wrapper
+# Permissions: 755, root:root
+# Manages /etc/nginx/iprules.d/<domain>.conf
+
+set -euo pipefail
+
+IPRULES_DIR=/etc/nginx/iprules.d
+mkdir -p "$IPRULES_DIR"
+
+# UI에서 관리되는 도메인 (iprules.d/<domain>.conf 파일로 제어)
+MANAGED=("app.example.com" "app-api.example.com")
+
+# UI에서 read-only — 직접 vhost에 allow/deny 정의된 보호 도메인 (자기 잠금 방어)
+PROTECTED=("monitor-nginx.example.com")
+
+is_protected() {
+    local d="$1"
+    for p in "${PROTECTED[@]}"; do
+        [[ "$d" == "$p" ]] && return 0
+    done
+    return 1
+}
+
+is_managed() {
+    local d="$1"
+    for m in "${MANAGED[@]}"; do
+        [[ "$d" == "$m" ]] && return 0
+    done
+    return 1
+}
+
+validate_domain() {
+    [[ "$1" =~ ^[a-z0-9.-]{3,253}$ ]] || { echo "ERROR: Invalid domain: $1" >&2; exit 1; }
+}
+
+validate_ip() {
+    local ip="$1"
+    if [[ ! "$ip" =~ ^[0-9a-fA-F:.]+(/[0-9]{1,3})?$ ]] || [[ ${#ip} -gt 64 ]]; then
+        echo "ERROR: Invalid IP/CIDR: $ip" >&2
+        exit 1
+    fi
+}
+
+# 보호 도메인의 vhost-direct allow/deny 룰을 표시용으로 추출
+get_protected_view() {
+    local d="$1"
+    for f in /etc/nginx/sites-available/*; do
+        [[ "$f" == *.bak* ]] && continue
+        if grep -q "server_name[[:space:]].*${d}" "$f" 2>/dev/null; then
+            echo "# MODE=vhost-direct"
+            echo "# Source: $f (nginx vhost에 직접 정의 — iprules.d로 관리되지 않음)"
+            echo "# Read-only — SSH로만 변경"
+            grep -E "^[[:space:]]*(allow|deny)[[:space:]]" "$f" 2>/dev/null | head -20
+            return 0
+        fi
+    done
+    echo "# MODE=unknown"
+    return 1
+}
+
+ACTION="${1:-}"
+shift || true
+
+case "$ACTION" in
+    list)
+        # MANAGED 먼저 — iprules.d 파일 기반
+        for d in "${MANAGED[@]}"; do
+            f="$IPRULES_DIR/$d.conf"
+            if [[ -f "$f" ]]; then
+                mode=$(grep -oE '^# MODE=[a-z]+' "$f" 2>/dev/null | head -1 | cut -d= -f2)
+                [[ -z "$mode" ]] && mode="unknown"
+            else
+                mode="public"
+            fi
+            echo -e "${d}\t${mode}\tfalse"
+        done
+        # PROTECTED — vhost-direct
+        for d in "${PROTECTED[@]}"; do
+            echo -e "${d}\tvhost-direct\ttrue"
+        done
+        ;;
+
+    get)
+        DOMAIN="${1:-}"
+        validate_domain "$DOMAIN"
+        if is_protected "$DOMAIN"; then
+            get_protected_view "$DOMAIN"
+            exit 0
+        fi
+        FILE="$IPRULES_DIR/$DOMAIN.conf"
+        if [[ -f "$FILE" ]]; then
+            cat "$FILE"
+        else
+            echo "# MODE=public"
+            echo "allow all;"
+        fi
+        ;;
+
+    set)
+        DOMAIN="${1:-}"
+        MODE="${2:-public}"
+        shift 2 || { echo "ERROR: Usage: set <domain> <mode> [ip1 ip2 ...]" >&2; exit 1; }
+        validate_domain "$DOMAIN"
+        if is_protected "$DOMAIN"; then
+            echo "ERROR: $DOMAIN is protected — edit via SSH only" >&2
+            exit 1
+        fi
+        if ! is_managed "$DOMAIN"; then
+            echo "ERROR: $DOMAIN is not in MANAGED list" >&2
+            exit 1
+        fi
+        FILE="$IPRULES_DIR/$DOMAIN.conf"
+        BACKUP="$FILE.bak.$(date +%s)"
+        [[ -f "$FILE" ]] && cp "$FILE" "$BACKUP"
+
+        TS=$(date -u +%Y-%m-%dT%H:%M:%S%z)
+        case "$MODE" in
+            public)
+                cat > "$FILE" <<EOF
+# MODE=public
+# Auto-managed by Cockpit Server Monitor
+# Last updated: $TS
+allow all;
+EOF
+                ;;
+            whitelist)
+                if [[ $# -eq 0 ]]; then
+                    [[ -f "$BACKUP" ]] && mv "$BACKUP" "$FILE"
+                    echo "ERROR: whitelist mode requires at least 1 IP" >&2
+                    exit 1
+                fi
+                {
+                    echo "# MODE=whitelist"
+                    echo "# Auto-managed by Cockpit Server Monitor"
+                    echo "# Last updated: $TS"
+                    for ip in "$@"; do
+                        validate_ip "$ip"
+                        echo "allow $ip;"
+                    done
+                    echo "deny all;"
+                } > "$FILE"
+                ;;
+            *)
+                [[ -f "$BACKUP" ]] && mv "$BACKUP" "$FILE"
+                echo "ERROR: Unknown mode: $MODE (allowed: public, whitelist)" >&2
+                exit 1
+                ;;
+        esac
+
+        # nginx 문법 검사 — 실패 시 자동 복원
+        if ! nginx -t 2>/dev/null; then
+            echo "ERROR: nginx -t failed — restoring backup" >&2
+            if [[ -f "$BACKUP" ]]; then
+                mv "$BACKUP" "$FILE"
+            else
+                rm -f "$FILE"
+            fi
+            nginx -t 2>&1 >&2
+            exit 1
+        fi
+
+        systemctl reload nginx
+        echo "OK: $DOMAIN -> $MODE ($(wc -l < "$FILE") lines)"
+        ;;
+
+    *)
+        echo "ERROR: Unknown action: $ACTION" >&2
+        echo "Usage: $0 {list|get <domain>|set <domain> <public|whitelist> [ip1 ip2 ...]}" >&2
+        exit 1
+        ;;
+esac

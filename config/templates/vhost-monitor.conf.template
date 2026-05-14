@@ -1,0 +1,47 @@
+# {{SERVER_NAME}} Server Monitoring VirtualHost
+
+<VirtualHost *:80>
+    ServerAdmin {{SSL_EMAIL}}
+    ServerName {{SERVER_DOMAIN}}
+
+    <Location />
+        AuthType Basic
+        AuthName "Server Monitor"
+        AuthUserFile /etc/httpd/.htpasswd-monitor
+        Require valid-user
+    </Location>
+
+    DocumentRoot /home/{{MONITOR_USER}}/www
+    <Directory /home/{{MONITOR_USER}}/www>
+        Options -Indexes
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    # Netdata
+    ProxyPass /netdata/ http://127.0.0.1:{{NETDATA_PORT}}/ connectiontimeout=5 timeout=30
+    ProxyPassReverse /netdata/ http://127.0.0.1:{{NETDATA_PORT}}/
+
+    # Uptime Kuma (+ WebSocket)
+    RewriteEngine On
+    RewriteCond %{HTTP:Upgrade} =websocket [NC]
+    RewriteRule ^/uptime/(.*) ws://127.0.0.1:{{UPTIME_KUMA_PORT}}/$1 [P,L]
+    ProxyPass /uptime/ http://127.0.0.1:{{UPTIME_KUMA_PORT}}/ connectiontimeout=5 timeout=30
+    ProxyPassReverse /uptime/ http://127.0.0.1:{{UPTIME_KUMA_PORT}}/
+    <Location /uptime/>
+        Require all granted
+    </Location>
+
+    # Cockpit (+ WebSocket)
+    RewriteCond %{HTTP:Upgrade} =websocket [NC]
+    RewriteRule ^/cockpit/(.*) ws://127.0.0.1:{{COCKPIT_PORT}}/cockpit/$1 [P,L]
+    ProxyPreserveHost On
+    ProxyPass /cockpit/ http://127.0.0.1:{{COCKPIT_PORT}}/cockpit/ connectiontimeout=5 timeout=30
+    ProxyPassReverse /cockpit/ http://127.0.0.1:{{COCKPIT_PORT}}/cockpit/
+    <Location /cockpit/>
+        Require all granted
+    </Location>
+
+    ErrorLog /home/{{MONITOR_USER}}/logs/monitor-error.log
+    CustomLog /home/{{MONITOR_USER}}/logs/monitor-access.log combined
+</VirtualHost>

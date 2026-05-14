@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "name": "server-monitor",
+  "requires": {
+    "cockpit": "264"
+  },
+  "content-security-policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:",
+  "menu": {
+    "index": {
+      "label": "Server Monitor",
+      "path": "index.html",
+      "order": 5,
+      "keywords": [
+        {
+          "matches": ["monitor", "dashboard", "server", "status"],
+          "weight": 3
+        }
+      ]
+    }
+  }
+}

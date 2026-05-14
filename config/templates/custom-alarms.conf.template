@@ -1,0 +1,44 @@
+alarm: disk_space_warning
+on: disk.space
+lookup: average -1m percentage of used
+units: %
+every: 1m
+warn: $this > {{DISK_WARN}}
+crit: $this > {{DISK_CRIT}}
+info: Disk space usage is high
+
+alarm: cpu_usage_high
+on: system.cpu
+lookup: average -5m percentage of user,system,softirq,irq
+units: %
+every: 1m
+warn: $this > {{CPU_WARN}}
+crit: $this > {{CPU_CRIT}}
+info: CPU usage sustained above threshold
+
+alarm: ram_usage_high
+on: system.ram
+lookup: average -5m percentage of used
+units: %
+every: 1m
+warn: $this > {{RAM_WARN}}
+crit: $this > {{RAM_CRIT}}
+info: RAM usage is high
+
+alarm: mariadb_connections_high
+on: mysql.connections
+lookup: average -1m of connections
+units: connections
+every: 1m
+warn: $this > {{MARIADB_CONN_WARN}}
+crit: $this > {{MARIADB_CONN_CRIT}}
+info: MariaDB connection count is high
+
+alarm: apache_workers_busy
+on: apache.workers
+lookup: average -1m percentage of busy
+units: %
+every: 1m
+warn: $this > {{APACHE_WORKER_WARN}}
+crit: $this > {{APACHE_WORKER_CRIT}}
+info: Apache busy workers ratio is high

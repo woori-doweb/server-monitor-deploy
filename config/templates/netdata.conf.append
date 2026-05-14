@@ -1,0 +1,6 @@
+# Netdata bind 설정 (127.0.0.1만)
+# /etc/netdata/netdata.conf 하단에 추가
+
+[web]
+    bind to = 127.0.0.1
+    default port = {{NETDATA_PORT}}

@@ -1,0 +1,8 @@
+[WebService]
+ListenStream=127.0.0.1:{{COCKPIT_PORT}}
+AllowUnencrypted=true
+Origins = https://{{SERVER_DOMAIN}}
+UrlRoot=/cockpit
+
+[Session]
+IdleTimeout=15

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Monitor</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+        .container{max-width:600px;width:90%}
+        h1{font-size:1.5rem;margin-bottom:.5rem;color:#60a5fa}
+        p.sub{color:#94a3b8;margin-bottom:2rem;font-size:.9rem}
+        .card{background:#1e293b;border-radius:12px;padding:1.25rem;margin-bottom:1rem;display:flex;align-items:center;text-decoration:none;color:inherit;transition:background .2s}
+        .card:hover{background:#334155}
+        .icon{font-size:2rem;margin-right:1rem;width:48px;text-align:center}
+        .card h2{font-size:1.1rem;margin-bottom:.25rem}
+        .card p{font-size:.85rem;color:#94a3b8}
+        .info{margin-top:2rem;padding:1rem;background:#1e293b;border-radius:8px;font-size:.8rem;color:#64748b}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Server Monitor</h1>
+        <p class="sub">install.sh 실행 시 자동으로 서버 정보가 반영됩니다</p>
+        <a href="/netdata/" class="card">
+            <div class="icon">&#x1F4CA;</div>
+            <div><h2>Netdata</h2><p>CPU, RAM, Disk, Network, MariaDB, Apache real-time metrics</p></div>
+        </a>
+        <a href="/uptime/" class="card">
+            <div class="icon">&#x2705;</div>
+            <div><h2>Uptime Kuma</h2><p>Service uptime, SSL certificate monitoring, alerts</p></div>
+        </a>
+        <a href="/cockpit/" class="card">
+            <div class="icon">&#x2699;</div>
+            <div><h2>Cockpit</h2><p>System admin, logs, storage, security management</p></div>
+        </a>
+        <div class="info">Configured via install.sh</div>
+    </div>
+</body>
+</html>

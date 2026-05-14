@@ -1,0 +1,135 @@
+#!/bin/bash
+# /usr/local/bin/server-monitor-iprule
+# Server Monitor - Apache vhost IP rule wrapper
+# Permissions: 755, root:root
+# Manages /etc/httpd/conf.d/iprules.d/<domain>.conf
+
+set -euo pipefail
+
+IPRULES_DIR=/etc/httpd/conf.d/iprules.d
+mkdir -p "$IPRULES_DIR"
+
+# 보호 대상 — 자기 잠금 방어 위해 UI 변경 금지 (SSH로만)
+PROTECTED=("monitor.example.com")
+
+is_protected() {
+    local d="$1"
+    for p in "${PROTECTED[@]}"; do
+        [[ "$d" == "$p" ]] && return 0
+    done
+    return 1
+}
+
+validate_domain() {
+    [[ "$1" =~ ^[a-z0-9.-]{3,253}$ ]] || { echo "ERROR: Invalid domain: $1" >&2; exit 1; }
+}
+
+validate_ip() {
+    # IPv4 / IPv4 CIDR / IPv6 / IPv6 CIDR — Apache Require ip가 받는 형식
+    local ip="$1"
+    if [[ ! "$ip" =~ ^[0-9a-fA-F:.]+(/[0-9]{1,3})?$ ]] || [[ ${#ip} -gt 64 ]]; then
+        echo "ERROR: Invalid IP/CIDR: $ip" >&2
+        exit 1
+    fi
+}
+
+ACTION="${1:-}"
+shift || true
+
+case "$ACTION" in
+    list)
+        # 모든 도메인의 모드 출력 (TSV: domain<TAB>mode)
+        for f in "$IPRULES_DIR"/*.conf; do
+            [[ -f "$f" ]] || continue
+            d=$(basename "$f" .conf)
+            mode=$(grep -oE '^# MODE=[a-z]+' "$f" 2>/dev/null | head -1 | cut -d= -f2)
+            [[ -z "$mode" ]] && mode="unknown"
+            protected="false"
+            is_protected "$d" && protected="true"
+            echo -e "${d}\t${mode}\t${protected}"
+        done
+        ;;
+
+    get)
+        DOMAIN="${1:-}"
+        validate_domain "$DOMAIN"
+        FILE="$IPRULES_DIR/$DOMAIN.conf"
+        if [[ -f "$FILE" ]]; then
+            cat "$FILE"
+        else
+            echo "# MODE=public"
+            echo "Require all granted"
+        fi
+        ;;
+
+    set)
+        DOMAIN="${1:-}"
+        MODE="${2:-public}"
+        shift 2 || { echo "ERROR: Usage: set <domain> <mode> [ip1 ip2 ...]" >&2; exit 1; }
+        validate_domain "$DOMAIN"
+        if is_protected "$DOMAIN"; then
+            echo "ERROR: $DOMAIN is protected — edit via SSH only" >&2
+            exit 1
+        fi
+        FILE="$IPRULES_DIR/$DOMAIN.conf"
+        BACKUP="$FILE.bak.$(date +%s)"
+        [[ -f "$FILE" ]] && cp "$FILE" "$BACKUP"
+
+        TS=$(date -u +%Y-%m-%dT%H:%M:%S%z)
+        case "$MODE" in
+            public)
+                cat > "$FILE" <<EOF
+# MODE=public
+# Auto-managed by Cockpit Server Monitor
+# Last updated: $TS
+Require all granted
+EOF
+                ;;
+            whitelist)
+                if [[ $# -eq 0 ]]; then
+                    [[ -f "$BACKUP" ]] && mv "$BACKUP" "$FILE"
+                    echo "ERROR: whitelist mode requires at least 1 IP" >&2
+                    exit 1
+                fi
+                {
+                    echo "# MODE=whitelist"
+                    echo "# Auto-managed by Cockpit Server Monitor"
+                    echo "# Last updated: $TS"
+                    echo "<RequireAny>"
+                    for ip in "$@"; do
+                        validate_ip "$ip"
+                        echo "    Require ip $ip"
+                    done
+                    echo "</RequireAny>"
+                } > "$FILE"
+                ;;
+            *)
+                [[ -f "$BACKUP" ]] && mv "$BACKUP" "$FILE"
+                echo "ERROR: Unknown mode: $MODE (allowed: public, whitelist)" >&2
+                exit 1
+                ;;
+        esac
+
+        # Apache 문법 검사 — 실패 시 자동 복원
+        if ! httpd -t 2>/dev/null; then
+            echo "ERROR: httpd -t failed — restoring backup" >&2
+            if [[ -f "$BACKUP" ]]; then
+                mv "$BACKUP" "$FILE"
+            else
+                rm -f "$FILE"
+            fi
+            httpd -t 2>&1 >&2
+            exit 1
+        fi
+
+        # reload
+        systemctl reload httpd
+        echo "OK: $DOMAIN -> $MODE ($(wc -l < "$FILE") lines)"
+        ;;
+
+    *)
+        echo "ERROR: Unknown action: $ACTION" >&2
+        echo "Usage: $0 {list|get <domain>|set <domain> <public|whitelist> [ip1 ip2 ...]}" >&2
+        exit 1
+        ;;
+esac
