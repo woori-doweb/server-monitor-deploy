@@ -59,8 +59,8 @@ https://monitor-nginx.example.com/cockpit/server-monitor
 | DB | MariaDB | 미설치 |
 | 방화벽 | firewalld + zone | ufw + IP 화이트리스트 |
 | 컨테이너 | (PM2 + Node Uptime Kuma) | Docker (시스템) + Rootless Docker (appuser) |
-| SSL email | admin@example.com | mobile141107@gmail.com |
-| 보호 도메인 | vhost-kipa.conf, vhost-canvly.conf | monitor-nginx.example.com, app.example.com |
+| SSL email | admin@example.com | admin@example.com |
+| 보호 도메인 | vhost-app.conf, vhost-secondary.conf | monitor-nginx.example.com, app.example.com |
 
 ## 변경된 파일 (메인 서버 base 대비)
 

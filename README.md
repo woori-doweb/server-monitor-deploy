@@ -4,6 +4,8 @@
 
 서버 관제 자동 배포 도구 — **Netdata + Uptime Kuma + Cockpit** + 자체 Cockpit 플러그인 (`server-monitor`) 으로 단일 서버 또는 여러 서버를 통합 관제.
 
+![Architecture](docs/images/architecture.svg)
+
 ---
 
 ## English summary
@@ -45,6 +47,8 @@ sudo bash scripts/install.sh   # 자동 설치
 | Ubuntu + nginx + Docker | [`nginx-adapter/`](nginx-adapter/) | `apt`, `ufw`, nginx vhost include 모델, Rootless Docker 친화 |
 | Ubuntu 워크스테이션 (개발/사무용 PC) | [`workstation/`](workstation/) | Desktop(VNC) 메뉴 포함, Tailscale Funnel/Serve 노출 패턴 |
 | macOS (포팅 안내) | [`docs/PORTING_MACOS.md`](docs/PORTING_MACOS.md) | Cockpit 부재, launchd, pf, brew. **포팅 가이드만 제공** |
+
+![Deployment variants](docs/images/deployment-variants.svg)
 
 ### 구성 요소
 

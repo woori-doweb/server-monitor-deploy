@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" role="img" aria-labelledby="title desc" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+  <title id="title">System architecture data flow</title>
+  <desc id="desc">Browser traffic reaches Apache over HTTPS, then Apache reverse proxies to Netdata, Uptime Kuma, and Cockpit on 127.0.0.1. Cockpit includes the server-monitor plugin.</desc>
+  <defs>
+    <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 4 L 0 8 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <rect x="18" y="18" width="924" height="484" rx="8" fill="#f3f4f6" stroke="#4b5563" stroke-width="1.5"/>
+
+  <rect x="70" y="205" width="170" height="92" rx="8" fill="#f9fafb" stroke="#4b5563" stroke-width="1.5"/>
+  <text x="155" y="245" text-anchor="middle" fill="#4b5563" font-size="24" font-weight="700">Browser</text>
+  <text x="155" y="274" text-anchor="middle" fill="#4b5563" font-size="15">Client</text>
+
+  <line x1="240" y1="251" x2="356" y2="251" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrowhead)"/>
+  <rect x="268" y="218" width="84" height="27" rx="8" fill="#f9fafb" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="310" y="237" text-anchor="middle" fill="#4b5563" font-size="14" font-weight="600">HTTPS / SSL</text>
+
+  <rect x="370" y="178" width="220" height="146" rx="8" fill="#f9fafb" stroke="#4b5563" stroke-width="1.5"/>
+  <text x="480" y="219" text-anchor="middle" fill="#4b5563" font-size="22" font-weight="700">Apache (httpd)</text>
+  <text x="480" y="247" text-anchor="middle" fill="#4b5563" font-size="18" font-weight="700">reverse proxy</text>
+  <text x="480" y="280" text-anchor="middle" fill="#4b5563" font-size="15">Basic Auth</text>
+  <text x="480" y="304" text-anchor="middle" fill="#4b5563" font-size="15">IP whitelist</text>
+
+  <rect x="705" y="78" width="200" height="78" rx="8" fill="#f9fafb" stroke="#4b5563" stroke-width="1.5"/>
+  <text x="805" y="110" text-anchor="middle" fill="#4b5563" font-size="18" font-weight="700">Netdata</text>
+  <text x="805" y="135" text-anchor="middle" fill="#4b5563" font-size="15">:19999  /netdata/</text>
+
+  <rect x="705" y="214" width="200" height="78" rx="8" fill="#f9fafb" stroke="#4b5563" stroke-width="1.5"/>
+  <text x="805" y="246" text-anchor="middle" fill="#4b5563" font-size="18" font-weight="700">Uptime Kuma</text>
+  <text x="805" y="271" text-anchor="middle" fill="#4b5563" font-size="15">:3001  /uptime/</text>
+
+  <rect x="705" y="350" width="200" height="78" rx="8" fill="#f9fafb" stroke="#4b5563" stroke-width="1.5"/>
+  <text x="805" y="382" text-anchor="middle" fill="#4b5563" font-size="18" font-weight="700">Cockpit</text>
+  <text x="805" y="407" text-anchor="middle" fill="#4b5563" font-size="15">:9090  /cockpit/</text>
+
+  <rect x="730" y="442" width="150" height="38" rx="8" fill="#f9fafb" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="805" y="466" text-anchor="middle" fill="#4b5563" font-size="13" font-weight="600">+ server-monitor plugin</text>
+  <line x1="805" y1="428" x2="805" y2="442" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <path d="M 590 228 C 638 228, 648 117, 705 117" fill="none" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrowhead)"/>
+  <rect x="602" y="138" width="98" height="25" rx="8" fill="#f9fafb" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="651" y="156" text-anchor="middle" fill="#4b5563" font-size="13">127.0.0.1</text>
+
+  <line x1="590" y1="251" x2="705" y2="251" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrowhead)"/>
+  <rect x="606" y="219" width="98" height="25" rx="8" fill="#f9fafb" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="655" y="237" text-anchor="middle" fill="#4b5563" font-size="13">127.0.0.1</text>
+
+  <path d="M 590 274 C 638 274, 648 389, 705 389" fill="none" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrowhead)"/>
+  <rect x="602" y="337" width="98" height="25" rx="8" fill="#f9fafb" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="651" y="355" text-anchor="middle" fill="#4b5563" font-size="13">127.0.0.1</text>
+
+  <text x="480" y="474" text-anchor="middle" fill="#4b5563" font-size="15">
+    All backends bound to 127.0.0.1 — only Apache is publicly exposed
+  </text>
+</svg>

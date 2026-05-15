@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="500" viewBox="0 0 960 500" role="img" aria-labelledby="title desc" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+  <title id="title">Deployment variants</title>
+  <desc id="desc">Three deployment variants: Main for Rocky/RHEL 9 with Apache, nginx-adapter for Ubuntu with nginx and Docker, and workstation for Ubuntu desktop PC.</desc>
+
+  <rect x="18" y="18" width="924" height="464" rx="8" fill="#f3f4f6" stroke="#4b5563" stroke-width="1.5"/>
+  <text x="480" y="66" text-anchor="middle" fill="#4b5563" font-size="30" font-weight="700">Deployment variants</text>
+
+  <rect x="54" y="105" width="260" height="320" rx="8" fill="#f9fafb" stroke="#4b5563" stroke-width="1.5"/>
+  <text x="184" y="149" text-anchor="middle" fill="#4b5563" font-size="24" font-weight="700">Main</text>
+  <text x="184" y="177" text-anchor="middle" fill="#4b5563" font-size="15">Rocky/RHEL 9 + Apache</text>
+  <line x1="84" y1="202" x2="284" y2="202" stroke="#2563eb" stroke-width="1.5"/>
+  <circle cx="95" cy="232" r="4" fill="#2563eb"/>
+  <text x="111" y="237" fill="#4b5563" font-size="16">dnf</text>
+  <circle cx="95" cy="264" r="4" fill="#2563eb"/>
+  <text x="111" y="269" fill="#4b5563" font-size="16">firewalld</text>
+  <circle cx="95" cy="296" r="4" fill="#2563eb"/>
+  <text x="111" y="301" fill="#4b5563" font-size="16">SELinux</text>
+  <circle cx="95" cy="328" r="4" fill="#2563eb"/>
+  <text x="111" y="333" fill="#4b5563" font-size="16">mod_proxy</text>
+  <circle cx="95" cy="360" r="4" fill="#2563eb"/>
+  <text x="111" y="365" fill="#4b5563" font-size="16">MariaDB</text>
+  <text x="184" y="397" text-anchor="middle" fill="#4b5563" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">cockpit-plugin/</text>
+
+  <rect x="350" y="105" width="260" height="320" rx="8" fill="#f9fafb" stroke="#4b5563" stroke-width="1.5"/>
+  <text x="480" y="149" text-anchor="middle" fill="#4b5563" font-size="24" font-weight="700">nginx-adapter</text>
+  <text x="480" y="177" text-anchor="middle" fill="#4b5563" font-size="15">Ubuntu + nginx + Docker</text>
+  <line x1="380" y1="202" x2="580" y2="202" stroke="#2563eb" stroke-width="1.5"/>
+  <circle cx="391" cy="232" r="4" fill="#2563eb"/>
+  <text x="407" y="237" fill="#4b5563" font-size="16">apt</text>
+  <circle cx="391" cy="264" r="4" fill="#2563eb"/>
+  <text x="407" y="269" fill="#4b5563" font-size="16">ufw</text>
+  <circle cx="391" cy="296" r="4" fill="#2563eb"/>
+  <text x="407" y="301" fill="#4b5563" font-size="16">nginx vhost include</text>
+  <circle cx="391" cy="328" r="4" fill="#2563eb"/>
+  <text x="407" y="333" fill="#4b5563" font-size="16">Rootless Docker</text>
+  <text x="480" y="397" text-anchor="middle" fill="#4b5563" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">nginx-adapter/</text>
+
+  <rect x="646" y="105" width="260" height="320" rx="8" fill="#f9fafb" stroke="#4b5563" stroke-width="1.5"/>
+  <text x="776" y="149" text-anchor="middle" fill="#4b5563" font-size="24" font-weight="700">workstation</text>
+  <text x="776" y="177" text-anchor="middle" fill="#4b5563" font-size="15">Ubuntu desktop PC</text>
+  <line x1="676" y1="202" x2="876" y2="202" stroke="#2563eb" stroke-width="1.5"/>
+  <circle cx="687" cy="232" r="4" fill="#2563eb"/>
+  <text x="703" y="237" fill="#4b5563" font-size="16">Tailscale serve</text>
+  <circle cx="687" cy="264" r="4" fill="#2563eb"/>
+  <text x="703" y="269" fill="#4b5563" font-size="16">noVNC desktop</text>
+  <circle cx="687" cy="296" r="4" fill="#2563eb"/>
+  <text x="703" y="301" fill="#4b5563" font-size="16">ufw</text>
+  <circle cx="687" cy="328" r="4" fill="#2563eb"/>
+  <text x="703" y="333" fill="#4b5563" font-size="16">no web server</text>
+  <text x="776" y="397" text-anchor="middle" fill="#4b5563" font-size="15" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">workstation/</text>
+</svg>

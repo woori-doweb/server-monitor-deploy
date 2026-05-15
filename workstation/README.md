@@ -66,10 +66,10 @@ https://localhost-0.your-tailnet.ts.net/sysmon/cockpit/server-monitor
 | 방화벽 | firewalld + zone | ufw | ufw |
 | 컨테이너 | PM2 + Node Uptime Kuma | Docker(시스템) + Rootless(appuser) | **PM2(Uptime Kuma) + Docker(시스템, 다수 컨테이너)** |
 | Cockpit URL | `/cockpit/` | `/cockpit/` | **`/sysmon/cockpit/`** (UrlRoot) |
-| 보호 도메인 | vhost-kipa, vhost-canvly | monitor-nginx.example.com, appuser-prod | **(없음)** |
+| 보호 도메인 | vhost-app, vhost-secondary | monitor-nginx.example.com, appuser-prod | **(없음)** |
 | SERVICES 핵심 | httpd, mariadb, pm2 | nginx, docker, certbot.timer, duckdns-update.timer | **tailscaled, pm2-monitor, lightdm** |
 
-## 변경된 파일 (34 base 대비)
+## 변경된 파일 (main base 대비)
 
 | 파일 | 변경 |
 |---|---|
@@ -87,5 +87,5 @@ https://localhost-0.your-tailnet.ts.net/sysmon/cockpit/server-monitor
 
 | 날짜 | 내용 |
 |---|---|
-| 2026-05-09 | 초기 작성. 34 base에서 fork. 모니터링 도메인 — Tailscale serve의 `/sysmon/cockpit/server-monitor`. 비활성 메뉴 4개(VHost/SSL/Database/IP Rules) placeholder 처리. ADR-0006 Stage 1 디렉토리 분기 패턴 준수. |
+| 2026-05-09 | 초기 작성. main base에서 fork. 모니터링 도메인 — Tailscale serve의 `/sysmon/cockpit/server-monitor`. 비활성 메뉴 4개(VHost/SSL/Database/IP Rules) placeholder 처리. ADR-0006 Stage 1 디렉토리 분기 패턴 준수. |
 | 2026-05-09 | **Desktop (VNC) 메뉴 추가**. 호스트에 noVNC + websockify(:6080→:5900 loopback bridge) 설치 + `novnc-bridge.service` 자동기동, Tailscale serve `/sysmon/desktop` 등재. 플러그인에 `vnc.js` 추가, manifest CSP에 frame-src/connect-src 'self' 허용. ufw 3389/tcp + 5900/tcp Anywhere 제거 → 192.168.1.0/24 + 100.64.0.0/10(Tailscale CGNAT) 한정으로 좁힘. |

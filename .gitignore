@@ -42,6 +42,7 @@ build/
 
 # ── OMC / agent caches ───────────────────────────────────────
 .omc/
+.omx/
 .claude/
 CLAUDE.local.md
 

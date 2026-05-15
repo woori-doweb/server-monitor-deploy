@@ -7,7 +7,8 @@
     var $ = SM.$;
     var Validate = SM.Validate;
     var PM2_PATH = "/usr/local/lib/node_modules/pm2/bin/pm2";
-    var PROTECTED_VHOSTS = ["vhost-kipa.conf", "vhost-canvly.conf"];
+    /* Customize: list any vhost .conf filenames the UI must NOT delete/modify. */
+    var PROTECTED_VHOSTS = [/* "vhost-app1.conf", "vhost-app2.conf" */];
     var mgmtInitialized = false;
 
     /* ══════════════════════════════════════

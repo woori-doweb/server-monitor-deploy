@@ -122,7 +122,7 @@
                                 SM.logAction("VHOST_CREATE", domain + " -> 127.0.0.1:" + port);
                                 if (!ssl) { SM.setLoading(btn, false); SM.showResult("vhost-result", true, "VHost created for " + domain); loadVhostList(); SM.resetForm("vhost"); return; }
                                 SM.showResult("vhost-result", true, "VHost created. Issuing SSL via certbot --nginx... (up to 60 sec)");
-                                cockpit.spawn(["certbot", "--nginx", "--non-interactive", "--agree-tos", "--email", "mobile141107@gmail.com", "-d", domain], { superuser: "require" })
+                                cockpit.spawn(["certbot", "--nginx", "--non-interactive", "--agree-tos", "--email", "admin@example.com", "-d", domain], { superuser: "require" })
                                     .then(function() { SM.setLoading(btn, false); SM.logAction("SSL_ISSUE", domain); SM.showResult("vhost-result", true, "VHost + SSL created for " + domain); loadVhostList(); SM.resetForm("vhost"); })
                                     .fail(function(err) { SM.setLoading(btn, false); SM.logAction("SSL_FAIL", domain + " - " + SM.errMsg(err)); SM.showResult("vhost-result", false, "VHost created but SSL failed: " + SM.errMsg(err)); loadVhostList(); });
                             })

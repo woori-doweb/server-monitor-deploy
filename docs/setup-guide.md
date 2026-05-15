@@ -283,7 +283,7 @@ dnf update cockpit*
 ## 7. 주의사항
 
 - **포트 외부 노출 금지**: 19999, 3001, 9090은 firewalld에서 외부에 열지 않음. Apache 리버스 프록시만 사용
-- **기존 VHost 수정 금지**: vhost-kipa.conf, vhost-canvly.conf는 절대 수정하지 않음
+- **기존 VHost 수정 금지**: 운영 중인 사이트 vhost(예: `vhost-app.conf`)는 `PROTECTED_VHOSTS` 에 등록하여 절대 수정하지 않음
 - **httpd 재시작 전**: 반드시 `httpd -t`로 문법 검사 통과 확인
 - **비밀번호 관리**: 이 문서의 비밀번호는 운영 환경용이며, 외부 유출 주의
 - **server-status 분리**: SPA RewriteRule과 충돌 방지를 위해 별도 내부 포트(8401) 사용

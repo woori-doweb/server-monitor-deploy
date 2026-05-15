@@ -10,7 +10,8 @@
 
     /* ── Protected Resources ── */
 
-    SM.PROTECTED_VHOSTS = ["vhost-kipa.conf", "vhost-canvly.conf"];
+    /* Customize: list any vhost .conf filenames the UI must NOT delete/modify. */
+    SM.PROTECTED_VHOSTS = [/* "vhost-app1.conf", "vhost-app2.conf" */];
     SM.PROTECTED_ACCOUNTS = ["root", "monitor"];
     SM.PROTECTED_SERVICES = ["sshd", "firewalld"];
     SM.PROTECTED_PORTS = [19999, 3001, 9090];
