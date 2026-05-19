@@ -144,15 +144,19 @@
         SM.accounts.forEach(function(a) {
             var nameEsc = SM.escapeHtml(a.name);
             var homeEsc = SM.escapeHtml(a.home);
-            html += "<tr>" +
-                "<td>" + nameEsc + "</td>" +
+            html += '<tr class="acc-row" data-acc-name="' + nameEsc + '" data-acc-home="' + homeEsc + '" style="cursor:pointer" title="Click row to toggle home tree (safe mode)">' +
+                "<td>" + nameEsc + ' <span class="muted" style="font-size:0.7rem">▸</span></td>' +
                 "<td>" + SM.escapeHtml(a.uid) + "</td>" +
                 "<td><code>" + homeEsc + "</code></td>" +
                 "<td>" +
                   '<span class="acc-disk muted" data-disk-user="' + nameEsc + '">—</span> ' +
                   '<button class="btn btn-sm" data-disk-calc="' + nameEsc + '" data-disk-home="' + homeEsc + '">Calc</button>' +
                 "</td>" +
-                "</tr>";
+                "</tr>" +
+                '<tr class="acc-tree-row" data-acc-tree="' + nameEsc + '" hidden>' +
+                  '<td colspan="4" style="background:rgba(127,127,127,0.06);padding:0.5rem 0.75rem">' +
+                    '<div class="acc-tree-body" style="font-family:ui-monospace,monospace;font-size:0.78rem;white-space:pre;overflow-x:auto;max-height:24em;overflow-y:auto"></div>' +
+                  "</td></tr>";
         });
         container.innerHTML = html + "</tbody></table>" +
             '<div class="card mt-1">' +
@@ -164,8 +168,19 @@
             '</div>';
 
         container.querySelectorAll("[data-disk-calc]").forEach(function(btn) {
-            btn.addEventListener("click", function() {
+            btn.addEventListener("click", function(ev) {
+                ev.stopPropagation();
                 calcAccountDisk(btn.getAttribute("data-disk-calc"), btn.getAttribute("data-disk-home"), btn);
+            });
+        });
+
+        // Row click → toggle home directory tree (safe mode)
+        container.querySelectorAll(".acc-row").forEach(function(row) {
+            row.addEventListener("click", function(ev) {
+                if (ev.target.closest("button")) return; // Calc button safety
+                var name = row.getAttribute("data-acc-name");
+                var home = row.getAttribute("data-acc-home");
+                toggleAccountTree(name, home, row);
             });
         });
         var allBtn = $("account-disk-calc-all");
@@ -220,6 +235,81 @@
             .fail(function(err) {
                 rows.innerHTML = '<div class="result-box result-error">Failed: ' + SM.escapeHtml(SM.errMsg(err)) + '</div>';
             });
+    }
+
+    /**
+     * Safe-mode home tree viewer.
+     * Policy (docs/00-지침표준/07.qmd-검색-운영규칙 와 동급의 보안 가이드):
+     *   - maxdepth 2
+     *   - prune large/noisy dirs: node_modules, .cache, .git, dist, build
+     *   - prune secret dirs: .ssh, .gnupg, .aws, .gcp
+     *   - filter secret-leaning filenames: .env*, *token*, *secret*, *.pem, *.key, .bash_history
+     *   - never read file contents — names + sizes only
+     */
+    function toggleAccountTree(name, home, row) {
+        var treeRow = row.parentNode.querySelector('[data-acc-tree="' + name + '"]');
+        if (!treeRow) return;
+        if (!treeRow.hasAttribute("hidden")) { treeRow.setAttribute("hidden", ""); return; }
+        treeRow.removeAttribute("hidden");
+        var body = treeRow.querySelector(".acc-tree-body");
+        body.textContent = "Loading…";
+        var findArgs = [
+            "find", home, "-maxdepth", "2",
+            "(",
+              "-name", ".ssh", "-o", "-name", ".gnupg", "-o", "-name", ".aws",
+              "-o", "-name", ".gcp",
+              "-o", "-name", "node_modules", "-o", "-name", ".cache",
+              "-o", "-name", ".git", "-o", "-name", "dist", "-o", "-name", "build",
+            ")", "-prune",
+            "-o",
+            "(", "-type", "d", "-o", "-type", "f", ")",
+            "!", "-name", ".env*", "!", "-name", "*token*", "!", "-name", "*secret*",
+            "!", "-name", "*.pem", "!", "-name", "*.key", "!", "-name", ".bash_history",
+            "-printf", "%y\t%P\t%s\n"
+        ];
+        cockpit.spawn(findArgs, { superuser: "require", err: "ignore" })
+            .then(function(out) {
+                var lines = (out || "").trim().split("\n").filter(function(l) { return l && l.indexOf("\t") > 0; });
+                lines.sort(function(a, b) {
+                    var ap = a.split("\t")[1] || "";
+                    var bp = b.split("\t")[1] || "";
+                    return ap.localeCompare(bp);
+                });
+                var cap = 300;
+                var truncated = lines.length > cap;
+                if (truncated) lines = lines.slice(0, cap);
+                var parts = lines.map(function(l) {
+                    var f = l.split("\t");
+                    var typ = f[0], path = f[1], size = f[2];
+                    if (!path) return null;
+                    var depth = (path.match(/\//g) || []).length;
+                    var indent = "  ".repeat(depth);
+                    var basename = path.split("/").pop();
+                    var icon = typ === "d" ? "📁" : "📄";
+                    var sizeStr = typ === "f" ? "  (" + humanSize(parseInt(size, 10) || 0) + ")" : "/";
+                    return indent + icon + " " + basename + (typ === "d" ? sizeStr : sizeStr);
+                }).filter(Boolean);
+                var policyNote =
+                    "── Safe mode (hidden by policy):" +
+                    " dirs [.ssh .gnupg .aws .gcp node_modules .cache .git dist build]," +
+                    " files [.env*, *token*, *secret*, *.pem, *.key, .bash_history]," +
+                    " depth ≤ 2, file contents NOT read.";
+                if (truncated) policyNote += "\n── Output truncated at " + cap + " entries.";
+                if (parts.length === 0) parts.push("(no visible entries — likely all under hidden categories)");
+                body.textContent = home + "\n" + parts.join("\n") + "\n\n" + policyNote;
+                SM.logAction("ACCOUNT_TREE_VIEW", name + " home=" + home + " entries=" + parts.length + (truncated ? " truncated" : ""));
+            })
+            .fail(function(err) {
+                body.textContent = "Failed to read tree: " + SM.errMsg(err);
+            });
+    }
+
+    function humanSize(n) {
+        if (!isFinite(n) || n < 0) return "?";
+        var units = ["B", "K", "M", "G", "T"];
+        var i = 0;
+        while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+        return (n < 10 && i > 0 ? n.toFixed(1) : Math.round(n)) + units[i];
     }
 
     function calcAccountDisk(name, home, btn, done) {
